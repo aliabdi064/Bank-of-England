@@ -72,7 +72,7 @@ Comprehensive EDA was performed to understand data distributions, identify patte
 
 *   Significant disparities in average house prices exist across different Counties and Towns. (See `reports/top_county_avg_price.png` and `reports/top_towns_avg_price.png`)
 *   A comparison between London and the North East (using example counties like Tyne and Wear, Durham, Northumberland) revealed substantial differences in price distributions and trends over time. (See `reports/london_vs_ne_boxplot.png` and `reports/london_vs_ne_timeseries.png`)
-    *   *Note:* Further investigation is needed to precisely map all London areas within the `County` column, as initial filtering for 'GREATER LONDON' yielded limited data points.
+    *   *Note:* The London analysis now incorporates a comprehensive list of London boroughs/counties, providing a more accurate representation of the London housing market.
 
 ### 4.4 Machine Learning Model Performance
 
