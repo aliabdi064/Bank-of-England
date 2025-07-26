@@ -11,44 +11,23 @@ This project undertakes a comprehensive data science analysis of the UK housing 
 *   **Predict House Prices:** Develop a machine learning model to predict property prices based on various features.
 *   **Derive Policy Insights:** Translate data-driven findings into clear, non-technical policy recommendations.
 
-## Methodology
-
-The project follows a robust data science methodology:
-
-1.  **Efficient Data Loading & Preparation:** Handled large datasets by loading in chunks, selecting relevant features, and ensuring data quality through type conversions and handling missing values.
-2.  **Feature Engineering:** Created new features (e.g., `year`, `is_post_covid`) to capture temporal trends and the impact of specific events.
-3.  **Exploratory Data Analysis (EDA):** Conducted in-depth statistical analysis and visualization to understand data distributions, relationships between variables, and initial trends.
-4.  **Machine Learning Modeling:** Implemented a **LightGBM Regressor** for house price prediction, chosen for its efficiency, scalability, and strong performance on tabular data.
-5.  **Model Evaluation & Interpretation:** Assessed model performance using standard metrics (MAE, RMSE, R2) and analyzed feature importances to understand key price drivers.
-6.  **Comprehensive Reporting:** Generated multiple reports tailored for different audiences, summarizing findings, technical details, and policy implications.
-
-## Key Findings & Insights
-
-*   **Post-COVID Price Surge:** The analysis clearly shows a significant and sustained increase in average house prices since early 2020, indicating a robust market response to the pandemic era.
-*   **Pronounced Regional Disparities:** House prices vary dramatically across the UK, with London and the South East commanding significantly higher values compared to other regions. Location remains a dominant factor.
-*   **Influential Factors:** Beyond time and location, property type (detached vs. flat), age (new build vs. established), and tenure (freehold vs. leasehold) are strong determinants of property value.
-*   **Predictive Modeling:** Our LightGBM model, while demonstrating the complexity of house price prediction, successfully identified the most influential factors, with the year of sale and location being paramount.
-
 ## Project Structure
 
 ```
-. 
-├── data/                       # Contains the raw and processed datasets
-│   └── House_Price_Full.csv
-├── notebooks/                  # Jupyter notebooks for interactive analysis and development
-│   └── data_exploration.ipynb
-├── reports/                    # Generated reports (PDFs, Markdown) and visualizations (PNGs)
-│   ├── data_scientist_exercise.pdf
-│   └── *.png                   # All generated plots from EDA and ML analysis
-├── .venv/                      # Python virtual environment for project dependencies
-├── .gitignore                  # Specifies files and directories to be ignored by Git
-├── requirements.txt            # Lists all Python package dependencies
-├── REPORT.md                   # Main project report (comprehensive)
-├── EDA_STORY_REPORT.md         # Narrative report on Exploratory Data Analysis
-├── TECHNICAL_REPORT.md         # Detailed report on data preparation, feature engineering, and statistics
-├── PREDICTION_MODEL_REPORT.md  # Specific report on the machine learning model
-├── POLICY_BRIEFING.md          # Concise, non-technical briefing for policymakers
-└── run_ml_analysis.py          # Python script to run the full analysis (data processing, EDA, ML)
+.
+├── 0_POLICY_BRIEFING.md
+├── 1_EXPLORATORY_DATA_ANALYSIS.md
+├── 1_run_lightgbm_analysis.py
+├── 2_DATA_PIPELINE_TECHNICAL_REPORT.md
+├── 2_run_xgboost_experiment.py
+├── 3_LIGHTGBM_MODEL_REPORT.md
+├── 4_XGBOOST_COMPARISON_REPORT.md
+├── README.md
+├── data/
+├── notebooks/
+├── reports/
+├── requirements.txt
+└── .venv/
 ```
 
 ## How to Run and Reproduce the Analysis
@@ -61,12 +40,9 @@ To reproduce this analysis and explore the project:
     cd Bank-of-England
     ```
 2.  **Set up Python Environment:**
-    *   Create a virtual environment:
+    *   Create and activate a virtual environment:
         ```bash
         python3 -m venv .venv
-        ```
-    *   Activate the virtual environment:
-        ```bash
         source .venv/bin/activate
         ```
     *   Install required Python packages:
@@ -74,23 +50,22 @@ To reproduce this analysis and explore the project:
         pip install -r requirements.txt
         ```
 3.  **Place Data:** Ensure the `House_Price_Full.csv` dataset is placed in the `data/` directory.
-4.  **Run the Analysis Script:**
+4.  **Run the Main Analysis Script:**
     ```bash
-    .venv/bin/python run_ml_analysis.py
+    .venv/bin/python 1_run_lightgbm_analysis.py
     ```
-    This script will perform all data loading, cleaning, EDA, and machine learning, saving all generated plots to the `reports/` directory.
-5.  **Explore Reports:** Read the Markdown reports (`.md` files) in the root directory and the `reports/` folder for detailed findings and visualizations.
+    This script will perform all data loading, cleaning, EDA, and machine learning for the primary LightGBM model, saving all generated plots to the `reports/` directory.
 
 ## Reports & Visualizations
 
-All detailed reports and visualizations are available in the repository:
+All detailed reports and visualizations are available in the repository. The recommended reading order is:
 
-*   **Main Project Report:** [`REPORT.md`](REPORT.md)
-*   **EDA Story Report:** [`EDA_STORY_REPORT.md`](EDA_STORY_REPORT.md)
-*   **Technical Report:** [`TECHNICAL_REPORT.md`](TECHNICAL_REPORT.md)
-*   **Prediction Model Report:** [`PREDICTION_MODEL_REPORT.md`](PREDICTION_MODEL_REPORT.md)
-*   **Policy Briefing:** [`POLICY_BRIEFING.md`](POLICY_BRIEFING.md)
-*   **All Plots:** Located in the [`reports/`](reports/) directory.
+*   **0_POLICY_BRIEFING.md:** A high-level summary for a non-technical audience.
+*   **1_EXPLORATORY_DATA_ANALYSIS.md:** A narrative report on the initial data findings.
+*   **2_DATA_PIPELINE_TECHNICAL_REPORT.md:** A detailed report on data preparation and feature engineering.
+*   **3_LIGHTGBM_MODEL_REPORT.md:** A specific report on the primary machine learning model.
+*   **4_XGBOOST_COMPARISON_REPORT.md:** A report on the comparative experiment with the XGBoost model.
+*   **All Plots:** Located in the `reports/` directory.
 
 ## Contact
 
