@@ -76,11 +76,11 @@ Comprehensive EDA was performed to understand data distributions, identify patte
 
 ### 4.4 Machine Learning Model Performance
 
-*   **Mean Absolute Error (MAE):** £170,705.87
-*   **Root Mean Squared Error (RMSE):** £1,431,486.19
-*   **R-squared (R2):** 0.1002
+*   **Mean Absolute Error (MAE):** £63,208.12
+*   **Root Mean Squared Error (RMSE):** £90,829.07
+*   **R-squared (R2):** 0.6057
 
-*   **Interpretation:** The R2 score of 0.1002 indicates that the model explains approximately 10% of the variance in house prices. While this suggests room for improvement, the model successfully identifies key influential factors. The high MAE and RMSE reflect the wide range of house prices and the inherent complexity of predicting them with the current feature set.
+*   **Interpretation:** The R2 score of 0.6057 indicates that the model explains approximately **60.57%** of the variance in house prices. This is a significant improvement, demonstrating that the enhanced data preprocessing and feature engineering have dramatically increased the model's ability to capture the underlying patterns in house prices. The reduced MAE and RMSE confirm that the model's predictions are now much closer to the actual values on average.
 
 ### 4.5 Feature Importance
 

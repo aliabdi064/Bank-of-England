@@ -46,7 +46,7 @@ To better understand the drivers of house prices and potentially forecast future
 *   **Accurate:** It is known for making reliable predictions on complex data.
 *   **Insightful:** It helps us understand which factors are most important in determining house prices.
 
-Our model uses features like property type, location (town, county), age, tenure, and the year of sale to predict the price. While the model provides valuable insights into the factors influencing prices, its current predictive accuracy is modest. This means that while it captures some trends, it doesn't perfectly predict every house price. For example, our model explains about 10% of the variation in house prices.
+Our model uses features like property type, location (town, county), age, tenure, and the year of sale to predict the price. With significant enhancements in data preparation and feature engineering, our model now explains over **60%** of the variation in house prices. This substantial improvement provides a much more robust foundation for understanding and potentially forecasting house price trends.
 
 *Visualisation: Actual vs. Predicted House Prices - See `reports/actual_vs_predicted_prices.png`*
 

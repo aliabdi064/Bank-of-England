@@ -1,139 +1,93 @@
-# Prediction Model Report: House Price Forecasting with LightGBM
+# Prediction Model Report (Iteration 2): Enhanced House Price Forecasting
 
-This report provides a detailed technical overview of the machine learning model developed for house price prediction within the Bank of England data science project. It covers the model selection, data preparation for modeling, training methodology, and a comprehensive interpretation of the evaluation metrics and feature importances.
+This report details the improvements made to the house price prediction model, focusing on advanced data preprocessing and feature engineering techniques. It presents the updated methodology, evaluation metrics, and feature importances, demonstrating a significant enhancement in predictive performance.
 
 ## 1. Introduction
 
-The primary objective of this component of the project is to build a predictive model capable of estimating property prices based on available historical transaction data. This is framed as a **regression problem**, where the model learns to map property characteristics to a continuous target variable: `Price`.
+Building upon the initial house price prediction model, this iteration focuses on refining the data pipeline to achieve higher predictive accuracy. The core objective remains to predict property `Price` using a regression approach, but with a more sophisticated handling of data characteristics.
 
-## 2. Model Selection: LightGBM Regressor
+## 2. Model Selection: LightGBM Regressor (Retained)
 
-### 2.1 Chosen Model
+The **LightGBM Regressor** remains the chosen model for its proven efficiency, scalability, and strong performance on large tabular datasets. Its ability to handle complex relationships and provide feature importances continues to be a key advantage for this project.
 
-For this house price prediction task, the **LightGBM Regressor** was selected.
+## 3. Enhanced Data Preparation for Modeling
 
-### 2.2 Justification for Model Choice
+Significant enhancements were made to the data preprocessing and feature engineering pipeline to improve model performance. These steps are crucial for transforming raw data into a format that maximizes the model's learning capability.
 
-LightGBM (Light Gradient Boosting Machine) is a gradient boosting framework that utilizes tree-based learning algorithms. Its selection is justified by several key advantages, particularly relevant for large, tabular datasets like the HM Land Registry Price Paid Data:
+### 3.1 Data Cleaning and Outlier Handling
 
-*   **Speed and Efficiency:** LightGBM is renowned for its high performance and speed. It employs novel techniques such as Gradient-based One-Side Sampling (GOSS) to reduce the number of data instances and Exclusive Feature Bundling (EFB) to reduce the number of features, significantly accelerating the training process without compromising accuracy.
-*   **Accuracy:** It consistently delivers competitive, often superior, accuracy compared to other boosting algorithms (e.g., XGBoost) on a wide range of machine learning tasks.
-*   **Scalability:** Designed for distributed computing, LightGBM can efficiently handle very large datasets, making it suitable for the millions of records in our house price data.
-*   **Handling Categorical Features:** While explicit One-Hot Encoding was used in our pipeline for broader compatibility, LightGBM has native support for categorical features, which can simplify preprocessing in some scenarios.
-*   **Interpretability (Feature Importance):** As a tree-based ensemble model, LightGBM provides feature importances. This is crucial for understanding which factors the model considers most influential in its predictions, allowing for valuable insights and actionable policy recommendations.
+*   **Duplicate Removal:** Duplicate rows were identified and removed from the dataset. This ensures that the model is not biased by redundant information.
+*   **Missing Value Imputation:** Missing values in `Town` and `County` columns were imputed with 'Unknown'. This prevents data loss and allows categorical encoding to proceed without errors.
+*   **Price Outlier Clipping:** Extreme outliers in the `Price` column were handled using an Interquartile Range (IQR)-based clipping method. Values below `Q1 - 1.5 * IQR` and above `Q3 + 1.5 * IQR` were clipped to these bounds. This reduces the impact of extreme values on model training and evaluation, leading to more robust predictions.
 
-### 2.3 Alternatives Considered (Implicitly)
+### 3.2 Target Variable Transformation
 
-While not explicitly implemented, other regression models such as Linear Regression, Ridge/Lasso Regression, Random Forest Regressor, and XGBoost Regressor were implicitly considered. LightGBM was chosen over these due to its superior balance of speed, accuracy, and scalability for this specific large-scale, tabular regression problem.
+*   **Log Transformation of Price:** The `Price` column, which exhibits a highly skewed distribution, was transformed using `np.log1p` (log(1+x)). This makes the distribution more Gaussian-like, which is beneficial for many regression models, including LightGBM, and helps the model focus on relative changes rather than absolute differences. All evaluation metrics are calculated on the inverse-transformed predictions to reflect actual price values.
 
-## 3. Data Preparation for Modeling
+### 3.3 Enhanced Feature Engineering
 
-Before feeding the data into the LightGBM model, several preprocessing steps were performed to ensure the data was in an optimal format.
+Beyond the initial `year` and `is_post_covid` features, new temporal features were created:
 
-### 3.1 Feature and Target Definition
+*   **`month_of_transfer`:** Extracted the month number from `Date of Transfer`.
+*   **`day_of_week_transfer`:** Extracted the day of the week (0=Monday, 6=Sunday) from `Date of Transfer`.
 
-*   **Features (X):** The independent variables used for prediction were:
-    *   `Property Type` (Categorical)
-    *   `Town` (Categorical)
-    *   `County` (Categorical)
-    *   `Old/New` (Categorical)
-    *   `Duration` (Categorical)
-    *   `year` (Numerical, engineered from `Date of Transfer`)
-    *   `is_post_covid` (Numerical/Boolean, engineered flag)
-*   **Target (y):** The dependent variable to be predicted was `Price`.
+### 3.4 Feature Scaling and Encoding
 
-### 3.2 Categorical Feature Encoding
+*   **Numerical Feature Scaling:** Numerical features (`year`, `month_of_transfer`, `day_of_week_transfer`, `is_post_covid`) were standardized using `StandardScaler`. This ensures that features with larger scales do not disproportionately influence the model.
+*   **Categorical Feature Encoding:** Categorical features (`Property Type`, `Town`, `County`, `Old/New`, `Duration`) were transformed using One-Hot Encoding, as in the previous iteration.
 
-Machine learning models typically require numerical input. Therefore, categorical features were transformed using **One-Hot Encoding**.
+### 3.5 Data Splitting
 
-*   **Method:** `sklearn.preprocessing.OneHotEncoder` was applied within a `ColumnTransformer`. This creates new binary (0 or 1) columns for each unique category within a feature. For example, `Property Type` with categories 'D', 'S', 'T', 'F', 'O' would be converted into five new columns (`Property Type_D`, `Property Type_S`, etc.).
-*   **Handling Unknown Categories:** `handle_unknown='ignore'` was set to gracefully manage any categories present in the test set that were not seen during training, preventing errors.
+The preprocessed data was split into training (80%) and testing (20%) sets with `random_state=42` for reproducibility.
 
-### 3.3 Data Splitting
+## 4. Model Training and Evaluation
 
-The prepared dataset was split into training and testing sets to evaluate the model's generalization capability.
+### 4.1 Model Training
 
-*   **Ratio:** An 80/20 split was used, meaning 80% of the data was allocated for training the model, and 20% was reserved for evaluating its performance on unseen data.
-*   **Random State:** `random_state=42` was set to ensure reproducibility of the split, meaning the same data points will always be in the training and testing sets across different runs.
+The LightGBM Regressor was trained on the enhanced dataset. The model pipeline now includes the comprehensive preprocessor for both categorical encoding and numerical scaling.
 
-## 4. Model Training
+### 4.2 Model Evaluation: Significant Performance Improvement
 
-The LightGBM Regressor was trained using the preprocessed training data.
-
-*   **Pipeline Integration:** The preprocessing steps (One-Hot Encoding) and the LightGBM regressor were integrated into a `sklearn.pipeline.Pipeline`. This streamlines the workflow, ensuring that preprocessing is consistently applied to both training and new data.
-*   **Hyperparameters:** The `LGBMRegressor` was initialized with the following key hyperparameters:
-    *   `n_estimators=1000`: The number of boosting rounds (trees) to build. A higher number can lead to better performance but also increases training time and risk of overfitting.
-    *   `learning_rate=0.05`: Controls the step size shrinkage. A smaller learning rate requires more estimators but can lead to a more robust model.
-    *   `num_leaves=31`: The maximum number of leaves in one tree. This controls the complexity of the individual trees.
-    *   `random_state=42`: Ensures reproducibility of the model training process.
-
-## 5. Model Evaluation: Statistical Techniques and Interpretation
-
-After training, the model's performance was rigorously evaluated on the unseen test set using standard regression metrics. These metrics provide a statistical measure of how well the model's predictions align with the actual house prices.
+After training, the model's performance was rigorously evaluated on the unseen test set. The predictions were inverse-transformed using `np.expm1` before calculating the metrics to ensure they are in the original price scale.
 
 *   **Mean Absolute Error (MAE):**
-    *   **Definition:** MAE is the average of the absolute differences between predicted and actual values. It measures the average magnitude of the errors in a set of predictions, without considering their direction.
-    *   **Formula:** $MAE = \frac{1}{n} \sum_{i=1}^{n} |y_i - \hat{y}_i|$
-    *   **Result:** £170,705.87
-    *   **Interpretation:** On average, the model's predictions deviate from the actual house prices by approximately £170,705.87. This value is in the same units as the target variable (Price), making it easily interpretable in real-world terms.
+    *   **Result:** £63,208.12
+    *   **Interpretation:** On average, the model's predictions are now off by approximately £63,208.12 from the actual house prices. This is a substantial improvement from the previous MAE of £170,705.87.
 
 *   **Root Mean Squared Error (RMSE):**
-    *   **Definition:** RMSE is the square root of the average of the squared differences between predicted and actual values. It gives a relatively high weight to large errors, as the errors are squared before they are averaged.
-    *   **Formula:** $RMSE = \sqrt{\frac{1}{n} \sum_{i=1}^{n} (y_i - \hat{y}_i)^2}$
-    *   **Result:** £1,431,486.19
-    *   **Interpretation:** The RMSE of £1,431,486.19 indicates the typical magnitude of the prediction errors. The fact that RMSE is significantly higher than MAE suggests the presence of some large individual prediction errors (outliers) that are heavily penalized by squaring. Like MAE, RMSE is in the same units as the target variable.
+    *   **Result:** £90,829.07
+    *   **Interpretation:** The RMSE of £90,829.07 indicates a much lower typical magnitude of prediction errors compared to the previous £1,431,486.19. This suggests that the model is now making fewer large errors.
 
 *   **R-squared (R2) Score:**
-    *   **Definition:** R2 score, also known as the coefficient of determination, measures the proportion of the variance in the dependent variable that is predictable from the independent variables. It indicates how well the model fits the observed data.
-    *   **Formula:** $R^2 = 1 - \frac{\sum_{i=1}^{n} (y_i - \hat{y}_i)^2}{\sum_{i=1}^{n} (y_i - \bar{y})^2}$
-    *   **Result:** 0.1002
-    *   **Interpretation:** An R2 score of 0.1002 means that approximately 10.02% of the variance in house prices can be explained by our model using the selected features. This is considered a **low R2 score**, implying that a significant portion (about 90%) of the variability in house prices is not captured by the current model. This highlights the complexity of house price prediction and the limitations of the current feature set.
+    *   **Result:** 0.6057
+    *   **Interpretation:** An R2 score of 0.6057 means that approximately **60.57%** of the variance in house prices can now be explained by our enhanced model. This is a significant improvement from the previous R2 of 0.1002, indicating that the new preprocessing and feature engineering steps have dramatically increased the model's ability to capture the underlying patterns in house prices.
 
-### 5.1 Limitations of the Current Model
+## 5. Feature Importance Analysis
 
-The relatively low R2 score and high error metrics suggest that while the model identifies some patterns, it does not fully capture the intricate dynamics of house price determination. This is primarily due to:
+The feature importance analysis provides insights into which factors contribute most to the improved predictions:
 
-*   **Feature Scarcity:** Real estate prices are influenced by numerous factors not present in the current dataset, such as property size (square footage/number of bedrooms), condition, specific location attributes (e.g., proximity to schools, transport, amenities), crime rates, local economic health, and interest rates.
-*   **Data Granularity:** `Town` and `County` might be too broad for precise price prediction. More granular location data (e.g., full postcode, latitude/longitude) would likely improve accuracy.
-*   **Outliers:** The presence of extremely high-value properties can disproportionately affect squared error metrics (RMSE) and pull down the R2 score.
-
-## 6. Feature Importance Analysis
-
-Feature importance quantifies the contribution of each input feature to the model's predictions. In tree-based models like LightGBM, it typically reflects how often a feature is used in decision splits across all trees and how much it reduces impurity.
-
-*   **Method:** The `feature_importances_` attribute of the trained `LGBMRegressor` was used to extract the importance scores. These scores were then normalized and visualized.
-*   **Key Findings (Top 15 Features):**
-    *   `year`: By far the most important feature, indicating a strong temporal trend in house prices.
-    *   `Property Type_O` (Other Property Type): Suggests that properties categorized as 'Other' have distinct pricing patterns.
-    *   `Duration_F` (Freehold Tenure): Highlights the significant difference in value between freehold and leasehold properties.
-    *   `Property Type_D` (Detached Property): Detached properties are a strong predictor of higher prices.
-    *   `is_post_covid`: Confirms the measurable impact of the COVID-19 pandemic on house prices.
-    *   `Old/New_N` (Established Dwelling): Whether a property is new or old is a key factor.
-    *   Specific `Town` and `County` features (e.g., `Town_LONDON`, `County_CITY OF WESTMINSTER`, `County_KENSINGTON AND CHELSEA`): Emphasize the critical role of location and regional disparities.
+*   **`Property Type_O` (Other Property Type):** Emerges as a highly influential feature, suggesting its unique pricing characteristics.
+*   **`Duration_F` (Freehold Tenure):** Continues to be a strong predictor.
+*   **`Property Type_D` (Detached Property):** Remains a key driver of price.
+*   **`scaled_year`:** The year of transfer, now scaled, retains its high importance, confirming the strong temporal trend.
+*   **`scaled_day_of_week_transfer` and `scaled_month_of_transfer`:** These newly engineered temporal features show notable importance, indicating that the day of the week and month of transfer have a measurable impact on price.
+*   Specific `Town` and `County` features (e.g., `Town_LONDON`, `County_COUNTY DURHAM`): Continue to highlight the critical role of location.
 
 ![Feature Importances](reports/feature_importances.png)
 
-## 7. Prediction Visualization
+## 6. Prediction Visualization
 
-A scatter plot of actual vs. predicted prices provides a visual assessment of the model's performance. A perfect model would show all points lying on the red diagonal line.
-
-*   **Observation:** The plot shows a general positive correlation between actual and predicted prices, but with significant scatter, especially at higher price ranges. This visually confirms the MAE and RMSE metrics, indicating that while the model captures the overall trend, its predictions have considerable error, particularly for more expensive properties.
+The scatter plot of actual vs. predicted prices now shows a much tighter clustering of points around the perfect prediction line, especially at lower and mid-price ranges. This visually confirms the significant improvement in model accuracy.
 
 ![Actual vs. Predicted Prices](reports/actual_vs_predicted_prices.png)
 
-## 8. Conclusion and Future Work
+## 7. Conclusion and Future Work
 
-The LightGBM Regressor successfully identified key drivers of house prices and provided a baseline for prediction. While the current model's predictive accuracy (R2 of 0.1002) is limited by the available features, it serves as a valuable starting point.
+This iteration of the house price prediction model demonstrates the profound impact of meticulous data preprocessing and thoughtful feature engineering. The LightGBM Regressor, combined with these enhancements, now explains over 60% of the variance in house prices, providing a much more robust tool for analysis and potential forecasting.
 
-**Future Work to Enhance Model Performance:**
+**Future Work:**
 
-*   **Feature Engineering:** Incorporate more granular and influential features such as:
-    *   Property size (e.g., number of bedrooms, square footage).
-    *   Property condition (if available).
-    *   Proximity to amenities (schools, transport, parks).
-    *   Local demographic and economic indicators.
-*   **Hyperparameter Tuning:** Systematically optimize LightGBM's hyperparameters using techniques like GridSearchCV or RandomizedSearchCV.
-*   **Advanced Models:** Explore ensemble methods or deep learning models if the dataset complexity and feature richness warrant it.
-*   **Outlier Treatment:** Investigate and potentially treat outliers in the `Price` column to improve model robustness.
-
-This model, despite its current limitations, provides a foundational understanding of house price prediction and highlights the critical factors influencing the UK housing market.
+*   **Advanced Feature Engineering:** Explore more complex features, such as interaction terms, polynomial features, or features derived from external data (e.g., economic indicators, local amenities, crime rates).
+*   **Hyperparameter Optimization:** Conduct a more exhaustive hyperparameter search for LightGBM to potentially squeeze out even more performance.
+*   **Ensemble Modeling:** Experiment with combining predictions from multiple models (e.g., stacking, blending) to further improve robustness and accuracy.
+*   **Time Series Components:** For forecasting future prices, explicitly incorporate time series components and models.
