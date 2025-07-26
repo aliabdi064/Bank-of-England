@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import os
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import OneHotEncoder
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
@@ -60,11 +60,44 @@ except Exception as e:
     print(f"An error occurred during efficient CSV loading: {e}")
     exit()
 
+# --- Data Preprocessing and Feature Engineering (New/Enhanced) ---
+print("\n--- Data Preprocessing and Feature Engineering (New/Enhanced) ---")
+
+# 1. Remove Duplicates
+initial_rows = df.shape[0]
+df.drop_duplicates(inplace=True)
+duplicate_rows = initial_rows - df.shape[0]
+print(f"Removed {duplicate_rows} duplicate rows.")
+
 # Convert 'Price' to numeric, coercing errors
 df['Price'] = pd.to_numeric(df['Price'], errors='coerce')
 
-# --- 2.3 Clean and Format ---
-print("\n--- Section 2.3: Data Cleaning and Formatting ---")
+# 2. Handle Missing Values (for Town and County if any)
+# Fill missing Town/County with 'Unknown' before any encoding
+for col in ['Town', 'County']:
+    if df[col].isnull().any():
+        df[col].fillna('Unknown', inplace=True)
+        print(f"Filled missing values in '{col}' with 'Unknown'.")
+
+# 3. Outlier Handling for Price (IQR-based clipping)
+Q1 = df['Price'].quantile(0.25)
+Q3 = df['Price'].quantile(0.75)
+IQR = Q3 - Q1
+lower_bound = Q1 - 1.5 * IQR
+upper_bound = Q3 + 1.5 * IQR
+
+# Clip outliers
+original_price_outliers = df[(df['Price'] < lower_bound) | (df['Price'] > upper_bound)].shape[0]
+df['Price'] = np.clip(df['Price'], lower_bound, upper_bound)
+print(f"Clipped {original_price_outliers} price outliers based on IQR (1.5*IQR). Price range after clipping: £{df['Price'].min():,.2f} - £{df['Price'].max():,.2f}")
+
+# 4. Log Transform Price (Target Variable)
+# Apply log1p to handle skewed distribution and make it more Gaussian-like
+df['Price'] = np.log1p(df['Price'])
+print("Price column log-transformed (np.log1p).")
+
+# --- 2.3 Clean and Format (Date and Filtering) ---
+print("\n--- Section 2.3: Date Cleaning and Filtering ---")
 
 # Convert 'Date of Transfer' to datetime objects
 # 'errors='coerce'' will turn unparseable dates into NaT (Not a Time)
@@ -85,9 +118,20 @@ print(f"Data filtered for years 2015-2024. New shape: {df_filtered.shape}")
 print("First 5 rows of filtered data (2015-2024):")
 print(df_filtered.head())
 
+# --- Feature Engineering (Continued) ---
+print("\n--- Feature Engineering (Continued) ---")
+
 # Create new columns: 'year'
 df_filtered['year'] = df_filtered['Date of Transfer'].dt.year
-print("\n'year' column created.")
+print("'year' column created.")
+
+# Create new columns: 'month_of_transfer'
+df_filtered['month_of_transfer'] = df_filtered['Date of Transfer'].dt.month
+print("'month_of_transfer' column created.")
+
+# Create new columns: 'day_of_week_transfer'
+df_filtered['day_of_week_transfer'] = df_filtered['Date of Transfer'].dt.dayofweek
+print("'day_of_week_transfer' column created.")
 
 # Create new columns: 'is_post_covid'
 # Using March 1, 2020 as the start of the post-COVID period for this analysis
@@ -122,7 +166,7 @@ print(monthly_avg_price.head())
 
 # Visualize monthly average prices
 plt.figure(figsize=(14, 7))
-sns.lineplot(data=monthly_avg_price, x='YearMonth', y='Price')
+sns.lineplot(data=monthly_avg_price, x='YearMonth', y=np.expm1(monthly_avg_price['Price'])) # Inverse transform for plotting
 plt.title('Average House Price Trend Since COVID-19 (2020 Onward)')
 plt.xlabel('Date')
 plt.ylabel('Average Price (£)')
@@ -152,7 +196,7 @@ london_counties = [
     'GREENWICH', 'HACKNEY', 'HARINGEY', 'HARROW', 'HAVERING', 'HILLINGDON',
     'HOUNSLOW', 'KINGSTON UPON THAMES', 'LAMBETH', 'LEWISHAM', 'MERTON',
     'NEWHAM', 'REDBRIDGE', 'RICHMOND UPON THAMES', 'SUTTON', 'TOWER HAMLETS',
-    'WALTHAM FOREST', 'WIMBLEDON' # Added Wimbledon as a common London reference, though it might be a Town
+    'WALTHAM FOREST'
 ]
 north_east_counties = ['TYNE AND WEAR', 'DURHAM', 'NORTHUMBERLAND', 'COUNTY DURHAM', 'GATESHEAD', 'NEWCASTLE UPON TYNE', 'NORTH TYNESIDE', 'SOUTH TYNESIDE', 'SUNDERLAND', 'HARTLEPOOL', 'MIDDLESBROUGH', 'REDCAR AND CLEVELAND', 'DARLINGTON']
 
@@ -164,15 +208,15 @@ print(f"\nLondon data points: {df_london.shape[0]}")
 print(f"North East data points: {df_north_east.shape[0]}")
 
 # Calculate average prices for the selected regions
-avg_price_london = df_london['Price'].mean()
-avg_price_north_east = df_north_east['Price'].mean()
+avg_price_london = np.expm1(df_london['Price'].mean()) # Inverse transform for printing
+avg_price_north_east = np.expm1(df_north_east['Price'].mean()) # Inverse transform for printing
 
 print(f"\nAverage Price in London (2015-2024): £{avg_price_london:,.2f}")
 print(f"Average Price in North East (2015-2024): £{avg_price_north_east:,.2f}")
 
 # Visualize average prices for top N counties
 plt.figure(figsize=(12, 8))
-sns.barplot(x='Price', y='County', data=county_avg_price.head(15))
+sns.barplot(x=np.expm1(county_avg_price['Price']), y=county_avg_price['County'].head(15)) # Inverse transform for plotting
 plt.title('Average House Price by County (Top 15, 2015-2024)')
 plt.xlabel('Average Price (£)')
 plt.ylabel('County')
@@ -184,7 +228,7 @@ plt.close()
 
 # Visualize price distribution for London vs North East using box plots
 plt.figure(figsize=(10, 6))
-sns.boxplot(x='County', y='Price',
+sns.boxplot(x='County', y=np.expm1(df_filtered[df_filtered['County'].isin(london_counties + north_east_counties)]['Price']),
             data=df_filtered[df_filtered['County'].isin(london_counties + north_east_counties)])
 plt.title('House Price Distribution: London vs North East (2015-2024)')
 plt.xlabel('Region')
@@ -203,7 +247,7 @@ monthly_avg_price_regions = df_regions_time.groupby(['YearMonth', 'County'])['Pr
 monthly_avg_price_regions['YearMonth'] = monthly_avg_price_regions['YearMonth'].dt.to_timestamp()
 
 plt.figure(figsize=(14, 7))
-sns.lineplot(data=monthly_avg_price_regions, x='YearMonth', y='Price', hue='County')
+sns.lineplot(data=monthly_avg_price_regions, x='YearMonth', y=np.expm1(monthly_avg_price_regions['Price']), hue='County') # Inverse transform for plotting
 plt.title('Monthly Average House Price Trend: London vs North East (2015-2024)')
 plt.xlabel('Date')
 plt.ylabel('Average Price (£)')
@@ -249,14 +293,14 @@ print("\n4.3 Distribution of Key Variables:")
 plt.figure(figsize=(16, 6))
 
 plt.subplot(1, 2, 1)
-sns.histplot(df_filtered['Price'], bins=50, kde=True)
+sns.histplot(np.expm1(df_filtered['Price']), bins=50, kde=True) # Inverse transform for plotting
 plt.title('Distribution of Price')
 plt.xlabel('Price (£)')
 plt.ylabel('Frequency')
 plt.ticklabel_format(style='plain', axis='x') # Prevent scientific notation on x-axis
 
 plt.subplot(1, 2, 2)
-sns.boxplot(y=df_filtered['Price'])
+sns.boxplot(y=np.expm1(df_filtered['Price'])) # Inverse transform for plotting
 plt.title('Box Plot of Price')
 plt.ylabel('Price (£)')
 plt.ticklabel_format(style='plain', axis='y') # Prevent scientific notation on y-axis
@@ -308,7 +352,7 @@ print("\n4.4 Relationships with Price:")
 
 # Price vs. Property Type
 plt.figure(figsize=(10, 6))
-sns.boxplot(data=df_filtered, x='Property Type', y='Price', order=df_filtered['Property Type'].value_counts().index)
+sns.boxplot(data=df_filtered, x='Property Type', y=np.expm1(df_filtered['Price']), order=df_filtered['Property Type'].value_counts().index) # Inverse transform for plotting
 plt.title('Price Distribution by Property Type')
 plt.xlabel('Property Type')
 plt.ylabel('Price (£)')
@@ -321,7 +365,7 @@ plt.close()
 
 # Price vs. Old/New
 plt.figure(figsize=(8, 6))
-sns.boxplot(data=df_filtered, x='Old/New', y='Price')
+sns.boxplot(data=df_filtered, x='Old/New', y=np.expm1(df_filtered['Price'])) # Inverse transform for plotting
 plt.title('Price Distribution by Old/New Property Status')
 plt.xlabel('Old/New')
 plt.ylabel('Price (£)')
@@ -334,7 +378,7 @@ plt.close()
 
 # Price vs. Duration
 plt.figure(figsize=(8, 6))
-sns.boxplot(data=df_filtered, x='Duration', y='Price')
+sns.boxplot(data=df_filtered, x='Duration', y=np.expm1(df_filtered['Price'])) # Inverse transform for plotting
 plt.title('Price Distribution by Duration (Tenure)')
 plt.xlabel('Duration')
 plt.ylabel('Price (£)')
@@ -348,7 +392,7 @@ plt.close()
 # Price vs. Year (Average Price Trend)
 plt.figure(figsize=(12, 7))
 avg_price_per_year = df_filtered.groupby('year')['Price'].mean().reset_index()
-sns.lineplot(data=avg_price_per_year, x='year', y='Price', marker='o')
+sns.lineplot(data=avg_price_per_year, x='year', y=np.expm1(avg_price_per_year['Price']), marker='o') # Inverse transform for plotting
 plt.title('Average House Price Trend by Year (2015-2024)')
 plt.xlabel('Year')
 plt.ylabel('Average Price (£)')
@@ -362,7 +406,7 @@ plt.close()
 
 # Price vs. is_post_covid
 plt.figure(figsize=(8, 6))
-sns.boxplot(data=df_filtered, x='is_post_covid', y='Price')
+sns.boxplot(data=df_filtered, x='is_post_covid', y=np.expm1(df_filtered['Price'])) # Inverse transform for plotting
 plt.title('Price Distribution: Pre-COVID vs. Post-COVID (from March 2020)')
 plt.xlabel('Is Post-COVID (True if >= Mar 2020)')
 plt.ylabel('Price (£)')
@@ -380,7 +424,7 @@ print("\n4.5 Geographical Analysis:")
 # Top 15 Towns by Average Price
 top_towns = df_filtered.groupby('Town')['Price'].mean().nlargest(15).reset_index()
 plt.figure(figsize=(12, 8))
-sns.barplot(x='Price', y='Town', data=top_towns)
+sns.barplot(x=np.expm1(top_towns['Price']), y=top_towns['Town']) # Inverse transform for plotting
 plt.title('Top 15 Towns by Average House Price (2015-2024)')
 plt.xlabel('Average Price (£)')
 plt.ylabel('Town')
@@ -394,7 +438,7 @@ plt.close()
 # Top 15 Counties by Average Price (already done in previous section, but good to reiterate for EDA)
 top_counties = df_filtered.groupby('County')['Price'].mean().nlargest(15).reset_index()
 plt.figure(figsize=(12, 8))
-sns.barplot(x='Price', y='County', data=top_counties)
+sns.barplot(x=np.expm1(top_counties['Price']), y=top_counties['County']) # Inverse transform for plotting
 plt.title('Top 15 Counties by Average House Price (2015-2024)')
 plt.xlabel('Average Price (£)')
 plt.ylabel('County')
@@ -415,20 +459,20 @@ print("\n--- Section 5: Machine Learning Model for Price Prediction ---")
 print("\n5.1 Data Preparation for ML:")
 
 # Define features (X) and target (y)
-X = df_filtered[['Property Type', 'Town', 'County', 'Old/New', 'Duration', 'year', 'is_post_covid']].copy()
-y = df_filtered['Price'].copy()
+X = df_filtered[['Property Type', 'Town', 'County', 'Old/New', 'Duration', 'year', 'month_of_transfer', 'day_of_week_transfer', 'is_post_covid']].copy()
+y = df_filtered['Price'].copy() # Price is already log-transformed
 
 # Identify categorical and numerical features
 categorical_features = ['Property Type', 'Town', 'County', 'Old/New', 'Duration']
-numerical_features = ['year', 'is_post_covid'] # is_post_covid is boolean, treated as numerical for simplicity here
+numerical_features = ['year', 'month_of_transfer', 'day_of_week_transfer', 'is_post_covid']
 
 # Create a column transformer for preprocessing
 # One-hot encode categorical features
-# Pass through numerical features
+# Standardize numerical features
 preprocessor = ColumnTransformer(
     transformers=[
         ('cat', OneHotEncoder(handle_unknown='ignore'), categorical_features),
-        ('num', 'passthrough', numerical_features)
+        ('num', StandardScaler(), numerical_features)
     ])
 
 # Split data into training and testing sets
@@ -463,9 +507,13 @@ print("Model training complete.")
 print("\n5.3 Model Evaluation:\n")
 y_pred = model.predict(X_test)
 
-mae = mean_absolute_error(y_test, y_pred)
-rmse = np.sqrt(mean_squared_error(y_test, y_pred))
-r2 = r2_score(y_test, y_pred)
+# Inverse transform predictions and actual values for evaluation
+y_test_original_scale = np.expm1(y_test)
+y_pred_original_scale = np.expm1(y_pred)
+
+mae = mean_absolute_error(y_test_original_scale, y_pred_original_scale)
+rmse = np.sqrt(mean_squared_error(y_test_original_scale, y_pred_original_scale))
+r2 = r2_score(y_test_original_scale, y_pred_original_scale)
 
 print(f"Mean Absolute Error (MAE): £{mae:,.2f}")
 print(f"Root Mean Squared Error (RMSE): £{rmse:,.2f}")
@@ -474,11 +522,12 @@ print(f"R-squared (R2): {r2:.4f}")
 # 5.4 Feature Importance Analysis
 print("\n5.4 Feature Importance Analysis:\n")
 
-# Get feature names after one-hot encoding
+# Get feature names after one-hot encoding and scaling
 # This requires fitting the preprocessor first to get the transformed column names
 preprocessor.fit(X_train)
 encoded_feature_names = preprocessor.named_transformers_['cat'].get_feature_names_out(categorical_features).tolist()
-all_feature_names = encoded_feature_names + numerical_features
+scaled_numerical_features = [f'scaled_{col}' for col in numerical_features] # Prefix for scaled features
+all_feature_names = encoded_feature_names + scaled_numerical_features
 
 # Get feature importances from the trained LightGBM model
 feature_importances = model.named_steps['regressor'].feature_importances_
@@ -507,8 +556,8 @@ print("\n5.5 Prediction and Visualization:\n")
 
 # Create a scatter plot of actual vs. predicted prices
 plt.figure(figsize=(10, 10))
-plt.scatter(y_test, y_pred, alpha=0.3)
-plt.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], '--r', linewidth=2) # Perfect prediction line
+plt.scatter(y_test_original_scale, y_pred_original_scale, alpha=0.3)
+plt.plot([y_test_original_scale.min(), y_test_original_scale.max()], [y_test_original_scale.min(), y_test_original_scale.max()], '--r', linewidth=2) # Perfect prediction line
 plt.title('Actual vs. Predicted House Prices')
 plt.xlabel('Actual Price (£)')
 plt.ylabel('Predicted Price (£)')
