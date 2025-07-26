@@ -227,12 +227,13 @@ print(f"Saved plot: {plot_path}")
 plt.close()
 
 # Visualize price distribution for London vs North East using box plots
-plt.figure(figsize=(10, 6))
+plt.figure(figsize=(12, 8))
 sns.boxplot(x='County', y=np.expm1(df_filtered[df_filtered['County'].isin(london_counties + north_east_counties)]['Price']),
             data=df_filtered[df_filtered['County'].isin(london_counties + north_east_counties)])
 plt.title('House Price Distribution: London vs North East (2015-2024)')
 plt.xlabel('Region')
 plt.ylabel('Price (£)')
+plt.xticks(rotation=45, ha='right')
 plt.yscale('log') # Use log scale for better visualization if prices vary widely
 plt.tight_layout()
 plot_path = os.path.join(reports_dir, 'london_vs_ne_boxplot.png')
