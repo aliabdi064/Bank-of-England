@@ -4,7 +4,7 @@
 .venv/
 
 # Large data files (do not commit raw data)
-data/House_Price_Full.csv
+data/*
 
 # Jupyter Notebook checkpoints
 .ipynb_checkpoints/
