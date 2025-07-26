@@ -144,10 +144,17 @@ print("\nTop 10 Counties by Average Price (2015-2024):")
 print(county_avg_price.head(10))
 
 # Identify some counties for London and North East for comparison
-# This is a simplified approach; a more robust method would involve
-# mapping postcodes or using geographical boundaries.
-london_counties = ['GREATER LONDON'] # 'GREATER LONDON' is often used for London in this dataset
-north_east_counties = ['TYNE AND WEAR', 'DURHAM', 'NORTHUMBERLAND'] # Example counties in North East
+# Updated based on unique county names from previous run
+london_counties = [
+    'CITY OF LONDON', 'CITY OF WESTMINSTER', 'KENSINGTON AND CHELSEA', 'CAMDEN',
+    'HAMMERSMITH AND FULHAM', 'ISLINGTON', 'SOUTHWARK', 'WANDSWORTH',
+    'BARNET', 'BEXLEY', 'BRENT', 'BROMLEY', 'CROYDON', 'EALING', 'ENFIELD',
+    'GREENWICH', 'HACKNEY', 'HARINGEY', 'HARROW', 'HAVERING', 'HILLINGDON',
+    'HOUNSLOW', 'KINGSTON UPON THAMES', 'LAMBETH', 'LEWISHAM', 'MERTON',
+    'NEWHAM', 'REDBRIDGE', 'RICHMOND UPON THAMES', 'SUTTON', 'TOWER HAMLETS',
+    'WALTHAM FOREST', 'WIMBLEDON' # Added Wimbledon as a common London reference, though it might be a Town
+]
+north_east_counties = ['TYNE AND WEAR', 'DURHAM', 'NORTHUMBERLAND', 'COUNTY DURHAM', 'GATESHEAD', 'NEWCASTLE UPON TYNE', 'NORTH TYNESIDE', 'SOUTH TYNESIDE', 'SUNDERLAND', 'HARTLEPOOL', 'MIDDLESBROUGH', 'REDCAR AND CLEVELAND', 'DARLINGTON']
 
 # Filter data for these specific regions
 df_london = df_filtered[df_filtered['County'].isin(london_counties)].copy()
