@@ -69,4 +69,4 @@ All detailed reports and visualizations are available in the repository. The rec
 
 ## Contact
 
-For any questions or further discussion, please contact [Your Name/Email/GitHub Profile Link].
+For any questions or further discussion, please contact .
